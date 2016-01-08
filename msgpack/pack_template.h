@@ -622,17 +622,12 @@ static inline int msgpack_pack_false(msgpack_packer* x)
 
 static inline int msgpack_pack_array(msgpack_packer* x, unsigned int n)
 {
-    if(n < 16) {
-        unsigned char d = 0x90 | n;
-        msgpack_pack_append_buffer(x, &d, 1);
-    } else if(n < 65536) {
+    if(n < 65536) {
         unsigned char buf[3];
         buf[0] = 0xdc; _msgpack_store16(&buf[1], (uint16_t)n);
         msgpack_pack_append_buffer(x, buf, 3);
     } else {
-        unsigned char buf[5];
-        buf[0] = 0xdd; _msgpack_store32(&buf[1], (uint32_t)n);
-        msgpack_pack_append_buffer(x, buf, 5);
+        PyErr_SetString(PyExc_ValueError, "Unsupport array length, max length is 65536");
     }
 }
 
@@ -643,17 +638,12 @@ static inline int msgpack_pack_array(msgpack_packer* x, unsigned int n)
 
 static inline int msgpack_pack_map(msgpack_packer* x, unsigned int n)
 {
-    if(n < 16) {
-        unsigned char d = 0x80 | n;
-        msgpack_pack_append_buffer(x, &TAKE8_8(d), 1);
-    } else if(n < 65536) {
+    if(n < 65536) {
         unsigned char buf[3];
         buf[0] = 0xde; _msgpack_store16(&buf[1], (uint16_t)n);
         msgpack_pack_append_buffer(x, buf, 3);
     } else {
-        unsigned char buf[5];
-        buf[0] = 0xdf; _msgpack_store32(&buf[1], (uint32_t)n);
-        msgpack_pack_append_buffer(x, buf, 5);
+        PyErr_SetString(PyExc_ValueError, "Unsupport map length, max length is 65536");
     }
 }
 
@@ -664,10 +654,7 @@ static inline int msgpack_pack_map(msgpack_packer* x, unsigned int n)
 
 static inline int msgpack_pack_raw(msgpack_packer* x, size_t l)
 {
-    if (l < 32) {
-        unsigned char d = 0xa0 | (uint8_t)l;
-        msgpack_pack_append_buffer(x, &TAKE8_8(d), 1);
-    } else if (x->use_bin_type && l < 256) {  // str8 is new format introduced with bin.
+    if (x->use_bin_type && l < 256) {  // str8 is new format introduced with bin.
         unsigned char buf[2] = {0xd9, (uint8_t)l};
         msgpack_pack_append_buffer(x, buf, 2);
     } else if (l < 65536) {
@@ -675,9 +662,7 @@ static inline int msgpack_pack_raw(msgpack_packer* x, size_t l)
         buf[0] = 0xda; _msgpack_store16(&buf[1], (uint16_t)l);
         msgpack_pack_append_buffer(x, buf, 3);
     } else {
-        unsigned char buf[5];
-        buf[0] = 0xdb; _msgpack_store32(&buf[1], (uint32_t)l);
-        msgpack_pack_append_buffer(x, buf, 5);
+        PyErr_SetString(PyExc_ValueError, "Unsupport string length, max length is 65536");
     }
 }
 

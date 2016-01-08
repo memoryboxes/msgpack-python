@@ -214,7 +214,7 @@ static inline int unpack_execute(unpack_context* ctx, const char* data, Py_ssize
                 case 0xd5:  // fixext 2
                 case 0xd6:  // fixext 4
                 case 0xd7:  // fixext 8
-                    again_fixed_trail_if_zero(ACS_EXT_VALUE, 
+                    again_fixed_trail_if_zero(ACS_EXT_VALUE,
                                               (1 << (((unsigned int)*p) & 0x03))+1,
                                               _ext_zero);
                 case 0xd8:  // fixext 16
@@ -222,21 +222,12 @@ static inline int unpack_execute(unpack_context* ctx, const char* data, Py_ssize
                 case 0xd9:  // str 8
                     again_fixed_trail(NEXT_CS(p), 1);
                 case 0xda:  // raw 16
-                case 0xdb:  // raw 32
                 case 0xdc:  // array 16
-                case 0xdd:  // array 32
                 case 0xde:  // map 16
-                case 0xdf:  // map 32
                     again_fixed_trail(NEXT_CS(p), 2 << (((unsigned int)*p) & 0x01));
                 default:
                     goto _failed;
                 }
-            SWITCH_RANGE(0xa0, 0xbf)  // FixRaw
-                again_fixed_trail_if_zero(ACS_RAW_VALUE, ((unsigned int)*p & 0x1f), _raw_zero);
-            SWITCH_RANGE(0x90, 0x9f)  // FixArray
-                start_container(_array, ((unsigned int)*p) & 0x0f, CT_ARRAY_ITEM);
-            SWITCH_RANGE(0x80, 0x8f)  // FixMap
-                start_container(_map, ((unsigned int)*p) & 0x0f, CT_MAP_KEY);
 
             SWITCH_RANGE_DEFAULT
                 goto _failed;
@@ -412,7 +403,7 @@ _end:
 #undef again_fixed_trail_if_zero
 #undef start_container
 
-template <unsigned int fixed_offset, unsigned int var_offset>
+template <unsigned int var_offset>
 static inline int unpack_container_header(unpack_context* ctx, const char* data, Py_ssize_t len, Py_ssize_t* off)
 {
     assert(len >= *off);
@@ -433,26 +424,6 @@ static inline int unpack_container_header(unpack_context* ctx, const char* data,
         inc_offset(5);
         size = _msgpack_load32(uint32_t, p + 1);
         break;
-#ifdef USE_CASE_RANGE
-    case fixed_offset + 0x0 ... fixed_offset + 0xf:
-#else
-    case fixed_offset + 0x0:
-    case fixed_offset + 0x1:
-    case fixed_offset + 0x2:
-    case fixed_offset + 0x3:
-    case fixed_offset + 0x4:
-    case fixed_offset + 0x5:
-    case fixed_offset + 0x6:
-    case fixed_offset + 0x7:
-    case fixed_offset + 0x8:
-    case fixed_offset + 0x9:
-    case fixed_offset + 0xa:
-    case fixed_offset + 0xb:
-    case fixed_offset + 0xc:
-    case fixed_offset + 0xd:
-    case fixed_offset + 0xe:
-    case fixed_offset + 0xf:
-#endif
         ++*off;
         size = ((unsigned int)*p) & 0x0f;
         break;
@@ -471,8 +442,8 @@ static inline int unpack_container_header(unpack_context* ctx, const char* data,
 
 static const execute_fn unpack_construct = &unpack_execute<true>;
 static const execute_fn unpack_skip = &unpack_execute<false>;
-static const execute_fn read_array_header = &unpack_container_header<0x90, 0xdc>;
-static const execute_fn read_map_header = &unpack_container_header<0x80, 0xde>;
+static const execute_fn read_array_header = &unpack_container_header<0xdc>;
+static const execute_fn read_map_header = &unpack_container_header<0xde>;
 
 #undef NEXT_CS
 
